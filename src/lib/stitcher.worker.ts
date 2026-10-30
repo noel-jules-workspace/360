@@ -2,27 +2,31 @@
 
 declare var cv: any;
 
+
 let isReady = false;
+
+// Set up Module before loading OpenCV
+(self as any).Module = {
+    onRuntimeInitialized: () => {
+        isReady = true;
+        console.log("OpenCV ready");
+    }
+};
 
 self.importScripts('/js/opencv.js');
 
 function waitForCv(): Promise<void> {
     return new Promise(resolve => {
-        if (typeof cv !== 'undefined' && cv.Mat) {
-            isReady = true;
+        if (isReady) {
             resolve();
-        } else if (typeof cv !== 'undefined' && typeof cv.onRuntimeInitialized !== 'undefined') {
-            const originalOnRuntimeInitialized = cv.onRuntimeInitialized;
-            cv.onRuntimeInitialized = () => {
-                if (originalOnRuntimeInitialized) originalOnRuntimeInitialized();
-                isReady = true;
-                resolve();
-            }
         } else {
             const interval = setInterval(() => {
-                if (typeof cv !== 'undefined' && cv.Mat) {
+                if (isReady) {
                     clearInterval(interval);
+                    resolve();
+                } else if (typeof cv !== 'undefined' && cv.Mat) {
                     isReady = true;
+                    clearInterval(interval);
                     resolve();
                 }
             }, 100);
